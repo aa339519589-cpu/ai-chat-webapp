@@ -1,0 +1,344 @@
+diff --git a/index.html b/index.html
+index 9845a0d..d8383e2 100644
+--- a/index.html
++++ b/index.html
+@@ -1378,8 +1378,12 @@
+       });
+ 
+       state.sending = true;
+-      document.getElementById('btnSend').disabled = true;
++      // 不禁用按钮，保持可点击以支持中止操作
+       document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-stop"></i>';
++      // 立刻将 onclick 设为中止函数，确保点击即停
++      const controller = new AbortController();
++      state.aborter = controller;
++      document.getElementById('btnSend').onclick = () => controller.abort();
+ 
+       const useStream = settings.stream;
+ 
+@@ -1410,19 +1414,17 @@
+       } finally {
+         state.sending = false;
+         state.aborter = null;
+-        document.getElementById('btnSend').disabled = false;
+         document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-paper-plane-top"></i>';
++        // ★ 关键修复：无论成功/失败/中止，都恢复 onclick，避免按钮"卡死"
++        document.getElementById('btnSend').onclick = sendMessage;
+         document.getElementById('chatInput').focus();
+       }
+     }
+ 
+     async function streamChat(messages, settings) {
+-      const controller = new AbortController();
+-      state.aborter = controller;
+-
+-      document.getElementById('btnSend').onclick = () => {
+-        controller.abort();
+-      };
++      // controller 已在 sendMessage 中创建并通过 state.aborter 传递
++      const controller = state.aborter;
++      if (!controller) throw new Error('中止控制器丢失');
+ 
+       const url = settings.apiBase + '/chat/completions';
+       const body = {
+@@ -1499,12 +1501,9 @@
+     }
+ 
+     async function nonStreamChat(messages, settings) {
+-      const controller = new AbortController();
+-      state.aborter = controller;
+-
+-      document.getElementById('btnSend').onclick = () => {
+-        controller.abort();
+-      };
++      // 使用 sendMessage 中创建的共享控制器
++      const controller = state.aborter;
++      if (!controller) throw new Error('中止控制器丢失');
+ 
+       const url = settings.apiBase + '/chat/completions';
+       const body = {
+
+diff --git a/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.json b/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.json
+new file mode 100644
+index 0000000..0000000
+--- /dev/null
++++ b/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.json
+@@ -0,0 +1,1 @@
++{"snapshotId":"11d19d0f-d887-4c65-8885-3f19d453371f","taskId":"385986d1-80c5-44ab-9234-2c3750715794","userId":"e5fddd00-bc3e-42b3-a9b4-05cdba9fc25a","reason":"auto: before edit index.html","createdAt":"2026-06-24T16:08:25.791Z","fileCount":3}
+
+diff --git a/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.patch b/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.patch
+new file mode 100644
+index 0000000..0000000
+--- /dev/null
++++ b/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.patch
+@@ -0,0 +1,64 @@
++diff --git a/index.html b/index.html
++index 9845a0d..40da9c2 100644
++--- a/index.html
+++++ b/index.html
++@@ -1378,8 +1378,12 @@
++       });
++ 
++       state.sending = true;
++-      document.getElementById('btnSend').disabled = true;
+++      // 不禁用按钮，保持可点击以支持中止操作
++       document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-stop"></i>';
+++      // 立刻将 onclick 设为中止函数，确保点击即停
+++      const controller = new AbortController();
+++      state.aborter = controller;
+++      document.getElementById('btnSend').onclick = () => controller.abort();
++ 
++       const useStream = settings.stream;
++ 
++@@ -1410,8 +1414,9 @@
++       } finally {
++         state.sending = false;
++         state.aborter = null;
++-        document.getElementById('btnSend').disabled = false;
++         document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-paper-plane-top"></i>';
+++        // ★ 关键修复：无论成功/失败/中止，都恢复 onclick，避免按钮"卡死"
+++        document.getElementById('btnSend').onclick = sendMessage;
++         document.getElementById('chatInput').focus();
++       }
++     }
++
++diff --git a/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json
++new file mode 100644
++index 0000000..0000000
++--- /dev/null
+++++ b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json
++@@ -0,0 +1,1 @@
+++{"snapshotId":"80f8e77a-5d91-44b8-b276-d4aee9a4a65e","taskId":"385986d1-80c5-44ab-9234-2c3750715794","userId":"e5fddd00-bc3e-42b3-a9b4-05cdba9fc25a","reason":"auto: before edit index.html","createdAt":"2026-06-24T16:08:22.418Z","fileCount":1}
++
++diff --git a/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch
++new file mode 100644
++index 0000000..0000000
++--- /dev/null
+++++ b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch
++@@ -0,0 +1,19 @@
+++diff --git a/index.html b/index.html
+++index 9845a0d..f1bc9f5 100644
+++--- a/index.html
++++++ b/index.html
+++@@ -1378,8 +1378,12 @@
+++       });
+++ 
+++       state.sending = true;
+++-      document.getElementById('btnSend').disabled = true;
++++      // 不禁用按钮，保持可点击以支持中止操作
+++       document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-stop"></i>';
++++      // 立刻将 onclick 设为中止函数，确保点击即停
++++      const controller = new AbortController();
++++      state.aborter = controller;
++++      document.getElementById('btnSend').onclick = () => controller.abort();
+++ 
+++       const useStream = settings.stream;
+++ 
+++
++
+
+diff --git a/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json
+new file mode 100644
+index 0000000..0000000
+--- /dev/null
++++ b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json
+@@ -0,0 +1,1 @@
++{"snapshotId":"80f8e77a-5d91-44b8-b276-d4aee9a4a65e","taskId":"385986d1-80c5-44ab-9234-2c3750715794","userId":"e5fddd00-bc3e-42b3-a9b4-05cdba9fc25a","reason":"auto: before edit index.html","createdAt":"2026-06-24T16:08:22.418Z","fileCount":1}
+
+diff --git a/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch
+new file mode 100644
+index 0000000..0000000
+--- /dev/null
++++ b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch
+@@ -0,0 +1,19 @@
++diff --git a/index.html b/index.html
++index 9845a0d..f1bc9f5 100644
++--- a/index.html
+++++ b/index.html
++@@ -1378,8 +1378,12 @@
++       });
++ 
++       state.sending = true;
++-      document.getElementById('btnSend').disabled = true;
+++      // 不禁用按钮，保持可点击以支持中止操作
++       document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-stop"></i>';
+++      // 立刻将 onclick 设为中止函数，确保点击即停
+++      const controller = new AbortController();
+++      state.aborter = controller;
+++      document.getElementById('btnSend').onclick = () => controller.abort();
++ 
++       const useStream = settings.stream;
++ 
++
+
+diff --git a/.claude/snapshots/bb0dfb5c-b456-4e09-afda-1eae6bfba3a9.json b/.claude/snapshots/bb0dfb5c-b456-4e09-afda-1eae6bfba3a9.json
+new file mode 100644
+index 0000000..0000000
+--- /dev/null
++++ b/.claude/snapshots/bb0dfb5c-b456-4e09-afda-1eae6bfba3a9.json
+@@ -0,0 +1,1 @@
++{"snapshotId":"bb0dfb5c-b456-4e09-afda-1eae6bfba3a9","taskId":"385986d1-80c5-44ab-9234-2c3750715794","userId":"e5fddd00-bc3e-42b3-a9b4-05cdba9fc25a","reason":"auto: before edit index.html","createdAt":"2026-06-24T16:08:32.566Z","fileCount":5}
+
+diff --git a/.claude/snapshots/bb0dfb5c-b456-4e09-afda-1eae6bfba3a9.patch b/.claude/snapshots/bb0dfb5c-b456-4e09-afda-1eae6bfba3a9.patch
+new file mode 100644
+index 0000000..0000000
+--- /dev/null
++++ b/.claude/snapshots/bb0dfb5c-b456-4e09-afda-1eae6bfba3a9.patch
+@@ -0,0 +1,157 @@
++diff --git a/index.html b/index.html
++index 9845a0d..bc7a54e 100644
++--- a/index.html
+++++ b/index.html
++@@ -1378,8 +1378,12 @@
++       });
++ 
++       state.sending = true;
++-      document.getElementById('btnSend').disabled = true;
+++      // 不禁用按钮，保持可点击以支持中止操作
++       document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-stop"></i>';
+++      // 立刻将 onclick 设为中止函数，确保点击即停
+++      const controller = new AbortController();
+++      state.aborter = controller;
+++      document.getElementById('btnSend').onclick = () => controller.abort();
++ 
++       const useStream = settings.stream;
++ 
++@@ -1410,19 +1414,17 @@
++       } finally {
++         state.sending = false;
++         state.aborter = null;
++-        document.getElementById('btnSend').disabled = false;
++         document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-paper-plane-top"></i>';
+++        // ★ 关键修复：无论成功/失败/中止，都恢复 onclick，避免按钮"卡死"
+++        document.getElementById('btnSend').onclick = sendMessage;
++         document.getElementById('chatInput').focus();
++       }
++     }
++ 
++     async function streamChat(messages, settings) {
++-      const controller = new AbortController();
++-      state.aborter = controller;
++-
++-      document.getElementById('btnSend').onclick = () => {
++-        controller.abort();
++-      };
+++      // controller 已在 sendMessage 中创建并通过 state.aborter 传递
+++      const controller = state.aborter;
+++      if (!controller) throw new Error('中止控制器丢失');
++ 
++       const url = settings.apiBase + '/chat/completions';
++       const body = {
++
++diff --git a/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.json b/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.json
++new file mode 100644
++index 0000000..0000000
++--- /dev/null
+++++ b/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.json
++@@ -0,0 +1,1 @@
+++{"snapshotId":"11d19d0f-d887-4c65-8885-3f19d453371f","taskId":"385986d1-80c5-44ab-9234-2c3750715794","userId":"e5fddd00-bc3e-42b3-a9b4-05cdba9fc25a","reason":"auto: before edit index.html","createdAt":"2026-06-24T16:08:25.791Z","fileCount":3}
++
++diff --git a/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.patch b/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.patch
++new file mode 100644
++index 0000000..0000000
++--- /dev/null
+++++ b/.claude/snapshots/11d19d0f-d887-4c65-8885-3f19d453371f.patch
++@@ -0,0 +1,64 @@
+++diff --git a/index.html b/index.html
+++index 9845a0d..40da9c2 100644
+++--- a/index.html
++++++ b/index.html
+++@@ -1378,8 +1378,12 @@
+++       });
+++ 
+++       state.sending = true;
+++-      document.getElementById('btnSend').disabled = true;
++++      // 不禁用按钮，保持可点击以支持中止操作
+++       document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-stop"></i>';
++++      // 立刻将 onclick 设为中止函数，确保点击即停
++++      const controller = new AbortController();
++++      state.aborter = controller;
++++      document.getElementById('btnSend').onclick = () => controller.abort();
+++ 
+++       const useStream = settings.stream;
+++ 
+++@@ -1410,8 +1414,9 @@
+++       } finally {
+++         state.sending = false;
+++         state.aborter = null;
+++-        document.getElementById('btnSend').disabled = false;
+++         document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-paper-plane-top"></i>';
++++        // ★ 关键修复：无论成功/失败/中止，都恢复 onclick，避免按钮"卡死"
++++        document.getElementById('btnSend').onclick = sendMessage;
+++         document.getElementById('chatInput').focus();
+++       }
+++     }
+++
+++diff --git a/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json
+++new file mode 100644
+++index 0000000..0000000
+++--- /dev/null
++++++ b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json
+++@@ -0,0 +1,1 @@
++++{"snapshotId":"80f8e77a-5d91-44b8-b276-d4aee9a4a65e","taskId":"385986d1-80c5-44ab-9234-2c3750715794","userId":"e5fddd00-bc3e-42b3-a9b4-05cdba9fc25a","reason":"auto: before edit index.html","createdAt":"2026-06-24T16:08:22.418Z","fileCount":1}
+++
+++diff --git a/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch
+++new file mode 100644
+++index 0000000..0000000
+++--- /dev/null
++++++ b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch
+++@@ -0,0 +1,19 @@
++++diff --git a/index.html b/index.html
++++index 9845a0d..f1bc9f5 100644
++++--- a/index.html
+++++++ b/index.html
++++@@ -1378,8 +1378,12 @@
++++       });
++++ 
++++       state.sending = true;
++++-      document.getElementById('btnSend').disabled = true;
+++++      // 不禁用按钮，保持可点击以支持中止操作
++++       document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-stop"></i>';
+++++      // 立刻将 onclick 设为中止函数，确保点击即停
+++++      const controller = new AbortController();
+++++      state.aborter = controller;
+++++      document.getElementById('btnSend').onclick = () => controller.abort();
++++ 
++++       const useStream = settings.stream;
++++ 
++++
+++
++
++diff --git a/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json
++new file mode 100644
++index 0000000..0000000
++--- /dev/null
+++++ b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.json
++@@ -0,0 +1,1 @@
+++{"snapshotId":"80f8e77a-5d91-44b8-b276-d4aee9a4a65e","taskId":"385986d1-80c5-44ab-9234-2c3750715794","userId":"e5fddd00-bc3e-42b3-a9b4-05cdba9fc25a","reason":"auto: before edit index.html","createdAt":"2026-06-24T16:08:22.418Z","fileCount":1}
++
++diff --git a/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch
++new file mode 100644
++index 0000000..0000000
++--- /dev/null
+++++ b/.claude/snapshots/80f8e77a-5d91-44b8-b276-d4aee9a4a65e.patch
++@@ -0,0 +1,19 @@
+++diff --git a/index.html b/index.html
+++index 9845a0d..f1bc9f5 100644
+++--- a/index.html
++++++ b/index.html
+++@@ -1378,8 +1378,12 @@
+++       });
+++ 
+++       state.sending = true;
+++-      document.getElementById('btnSend').disabled = true;
++++      // 不禁用按钮，保持可点击以支持中止操作
+++       document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-stop"></i>';
++++      // 立刻将 onclick 设为中止函数，确保点击即停
++++      const controller = new AbortController();
++++      state.aborter = controller;
++++      document.getElementById('btnSend').onclick = () => controller.abort();
+++ 
+++       const useStream = settings.stream;
+++ 
+++
++
