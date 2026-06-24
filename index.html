@@ -901,6 +901,9 @@
         <div class="form-group">
           <label>API 地址 <span class="label-desc">(OpenAI 兼容)</span></label>
           <input type="text" id="apiBase" placeholder="https://api.openai.com/v1" />
+          <div style="margin-top:6px;font-size:11px;color:var(--ink-muted);line-height:1.6;background:var(--accent-mist);padding:6px 10px;border-radius:4px;border:1px solid var(--border-light);">
+            <i class="fa-regular fa-circle-info"></i> Deepseek 配置：地址 <code style="font-family:var(--mono);background:var(--paper-darker);padding:1px 5px;border-radius:3px;font-size:10px;">https://api.deepseek.com</code> · 模型 <code style="font-family:var(--mono);background:var(--paper-darker);padding:1px 5px;border-radius:3px;font-size:10px;">deepseek-chat</code>
+          </div>
         </div>
         <div class="form-group">
           <label>API Key</label>
@@ -1378,8 +1381,12 @@
       });
 
       state.sending = true;
-      document.getElementById('btnSend').disabled = true;
+      // 不禁用按钮，保持可点击以支持中止操作
       document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-stop"></i>';
+      // 立刻将 onclick 设为中止函数，确保点击即停
+      const controller = new AbortController();
+      state.aborter = controller;
+      document.getElementById('btnSend').onclick = () => controller.abort();
 
       const useStream = settings.stream;
 
@@ -1397,6 +1404,15 @@
           if (last && last._streaming) {
             finishStreaming(last.content);
           }
+        } else if (err instanceof TypeError && err.message === 'Failed to fetch') {
+          toast('网络连接失败：请检查 API 地址和网络连接', 'error');
+          console.error(err);
+          const convNow = getCurrentConv();
+          if (convNow.messages[convNow.messages.length - 1]?._streaming) {
+            convNow.messages.pop();
+            saveConversations();
+            renderMessages();
+          }
         } else {
           toast('请求失败: ' + (err.message || '未知错误'), 'error');
           console.error(err);
@@ -1410,19 +1426,17 @@
       } finally {
         state.sending = false;
         state.aborter = null;
-        document.getElementById('btnSend').disabled = false;
         document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-paper-plane-top"></i>';
+        // ★ 关键修复：无论成功/失败/中止，都恢复 onclick，避免按钮"卡死"
+        document.getElementById('btnSend').onclick = sendMessage;
         document.getElementById('chatInput').focus();
       }
     }
 
     async function streamChat(messages, settings) {
-      const controller = new AbortController();
-      state.aborter = controller;
-
-      document.getElementById('btnSend').onclick = () => {
-        controller.abort();
-      };
+      // controller 已在 sendMessage 中创建并通过 state.aborter 传递
+      const controller = state.aborter;
+      if (!controller) throw new Error('中止控制器丢失');
 
       const url = settings.apiBase + '/chat/completions';
       const body = {
@@ -1495,16 +1509,13 @@
       }
 
       finishStreaming(fullContent);
-      document.getElementById('btnSend').onclick = sendMessage;
+      // onclick 恢复由 sendMessage 的 finally 块统一处理
     }
 
     async function nonStreamChat(messages, settings) {
-      const controller = new AbortController();
-      state.aborter = controller;
-
-      document.getElementById('btnSend').onclick = () => {
-        controller.abort();
-      };
+      // 使用 sendMessage 中创建的共享控制器
+      const controller = state.aborter;
+      if (!controller) throw new Error('中止控制器丢失');
 
       const url = settings.apiBase + '/chat/completions';
       const body = {
@@ -1539,7 +1550,7 @@
       const content = data.choices?.[0]?.message?.content || '';
 
       appendMessage('assistant', content, false);
-      document.getElementById('btnSend').onclick = sendMessage;
+      // onclick 恢复由 sendMessage 的 finally 块统一处理
     }
 
     // ================================================================

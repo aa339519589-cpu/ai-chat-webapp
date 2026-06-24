@@ -1,0 +1,18 @@
+diff --git a/index.html b/index.html
+index 9845a0d..f1bc9f5 100644
+--- a/index.html
++++ b/index.html
+@@ -1378,8 +1378,12 @@
+       });
+ 
+       state.sending = true;
+-      document.getElementById('btnSend').disabled = true;
++      // 不禁用按钮，保持可点击以支持中止操作
+       document.getElementById('btnSend').innerHTML = '<i class="fa-regular fa-stop"></i>';
++      // 立刻将 onclick 设为中止函数，确保点击即停
++      const controller = new AbortController();
++      state.aborter = controller;
++      document.getElementById('btnSend').onclick = () => controller.abort();
+ 
+       const useStream = settings.stream;
+ 
